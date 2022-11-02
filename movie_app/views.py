@@ -1,7 +1,8 @@
-import django.db.utils
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from .serializers import DirectorSerializer, ReviewSerializer, MovieSerializer, MovieWithReviewsSerializer
+from .serializers import DirectorSerializer, ReviewSerializer, MovieSerializer, \
+    MovieWithReviewsSerializer, MovieCreateSerializer, DirectorCreateSerializer, \
+    DirectorUpdateSerializer, MovieUpdateSerializer, ReviewValidateAbstractSerializer, ReviewUpdateSerializer
 from .models import Director, Review, Movie
 from rest_framework import status
 
@@ -13,11 +14,14 @@ def directors_view(request):
         serializer = DirectorSerializer(directors, many=True)
         return Response(data=serializer.data)
     elif request.method == 'POST':
-        director = Director.objects.create(
-            **request.data
-        ).save()
-        return Response(data=DirectorSerializer(director).data,
-                        status=status.HTTP_201_CREATED)
+        serializer = DirectorCreateSerializer(data=request.data)
+        if serializer.is_valid():
+            director = Director.objects.create(
+                **serializer.validated_data
+            ).save()
+            return Response(data=DirectorSerializer(director).data,
+                            status=status.HTTP_201_CREATED)
+        return serializer.is_valid(raise_exception=True)
 
 
 @api_view(['GET', 'PUT', 'DELETE'])
@@ -33,10 +37,14 @@ def director_detail_view(request, id):
         director.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
     else:
-        director.name = request.data.get('name')
-        director.save()
-        return Response(data=DirectorSerializer(director).data,
-                        status=status.HTTP_202_ACCEPTED)
+        serializer = DirectorUpdateSerializer(data=request.data,
+                                              context={'id': id})
+        if serializer.is_valid():
+            director.name = serializer.validated_data.get('name')
+            director.save()
+            return Response(data=DirectorSerializer(director).data,
+                            status=status.HTTP_202_ACCEPTED)
+        return serializer.is_valid(raise_exception=True)
 
 
 @api_view(['GET', 'POST'])
@@ -46,14 +54,14 @@ def movies_view(request):
         serializer = MovieSerializer(movies, many=True)
         return Response(data=serializer.data)
     elif request.method == 'POST':
-        try:
+        serializer = MovieCreateSerializer(data=request.data)
+        if serializer.is_valid():
             movie = Movie.objects.create(
-                **request.data
+                **serializer.validated_data
             ).save()
-        except django.db.utils.IntegrityError:
-            return Response(data='No director with such id')
-        return Response(data=MovieSerializer(movie).data,
-                        status=status.HTTP_201_CREATED)
+            return Response(data=MovieSerializer(movie).data,
+                            status=status.HTTP_201_CREATED)
+        return serializer.is_valid(raise_exception=True)
 
 
 @api_view(['GET'])
@@ -76,13 +84,17 @@ def movie_detail_view(request, id):
         movie.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
     else:
-        movie.title = request.data.get('title')
-        movie.duration = request.data.get('duration')
-        movie.director = request.data.get('director_id')
-        movie.description = request.data.get('description')
-        movie.save()
-        return Response(data=MovieSerializer(movie).data,
-                        status=status.HTTP_202_ACCEPTED)
+        serializer = MovieUpdateSerializer(data=request.data,
+                                           context={'id': id})
+        if serializer.is_valid():
+            movie.title = serializer.validated_data.get('title')
+            movie.description = serializer.validated_data.get('description')
+            movie.duration = serializer.validated_data.get('duration')
+            movie.director_id = serializer.validated_data.get('director_id')
+            movie.save()
+            return Response(data=MovieSerializer(movie).data,
+                            status=status.HTTP_202_ACCEPTED)
+        return serializer.is_valid(raise_exception=True)
 
 
 @api_view(['GET', 'POST'])
@@ -92,15 +104,14 @@ def reviews_view(request):
         serializer = ReviewSerializer(reviews, many=True)
         return Response(data=serializer.data)
     elif request.method == 'POST':
-        try:
+        serializer = ReviewValidateAbstractSerializer(data=request.data)
+        if serializer.is_valid():
             review = Review.objects.create(
-                **request.data
-            ).save()
-        except django.db.utils.IntegrityError:
-            return Response(data='No movie with such id',
-                            status=status.HTTP_404_NOT_FOUND)
-        return Response(data=ReviewSerializer(review).data,
-                        status=status.HTTP_201_CREATED)
+                **serializer.validated_data
+            )
+            return Response(data=ReviewSerializer(review).data,
+                            status=status.HTTP_201_CREATED)
+        return serializer.is_valid(raise_exception=True)
 
 
 @api_view(['GET', 'PUT', 'DELETE'])
@@ -116,11 +127,14 @@ def review_detail_view(request, id):
         review.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
     else:
-        fields = request.data
-        review.movie = request.data.get('movie_id')
-        review.text = request.data.get('text')
-        review.stars = request.data.get('stars')
-        review.save()
-        return Response(data=ReviewSerializer(review).data,
-                        status=status.HTTP_202_ACCEPTED)
+        serializer = ReviewUpdateSerializer(data=request.data,
+                                            context={'id': id})
+        if serializer.is_valid():
+            review.text = serializer.validated_data.get('text')
+            review.movie_id = serializer.validated_data.get('movie_id')
+            review.stars = serializer.validated_data.get('stars')
+            review.save()
+            return Response(data=ReviewSerializer(review).data,
+                            status=status.HTTP_202_ACCEPTED)
+        return serializer.is_valid(raise_exception=True)
 
