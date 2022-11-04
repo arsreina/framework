@@ -138,3 +138,8 @@ def review_detail_view(request, id):
                             status=status.HTTP_202_ACCEPTED)
         return serializer.is_valid(raise_exception=True)
 
+
+@api_view(['GET'])
+def test_view(request):
+    print(request.user)
+    return Response(data='')
