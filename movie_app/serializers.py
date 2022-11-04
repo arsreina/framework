@@ -1,7 +1,6 @@
 from rest_framework import serializers
 from movie_app.models import Review, Director, Movie
 from rest_framework.exceptions import ValidationError
-from django.contrib.auth.models import User
 
 
 class DirectorSerializer(serializers.ModelSerializer):
@@ -10,33 +9,7 @@ class DirectorSerializer(serializers.ModelSerializer):
         fields = 'name movies_count'.split()
 
 
-class MovieSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Movie
-        fields = 'id title duration director description'.split()
-
-
-class MovieReviewsSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Review
-        fields = 'id text stars'.split()
-
-
-class MovieWithReviewsSerializer(serializers.ModelSerializer):
-    reviews = MovieReviewsSerializer(many=True)
-
-    class Meta:
-        model = Movie
-        fields = 'id title reviews rating'.split()
-
-
-class ReviewSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Review
-        fields = 'id movie_id text stars'.split()
-
-
-class DirectorValidateAbstractSerializer(serializers.Serializer):
+class DirectorValidateAbstractSerializer(DirectorSerializer, serializers.Serializer):
     name = serializers.CharField(min_length=1)
 
 
@@ -60,7 +33,13 @@ class DirectorUpdateSerializer(DirectorValidateAbstractSerializer):
         raise ValidationError('Director with this name already exists')
 
 
-class MovieValidateAbstractSerializer(serializers.Serializer):
+class MovieSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Movie
+        fields = 'id title duration director description'.split()
+
+
+class MovieValidateAbstractSerializer(MovieSerializer, serializers.Serializer):
     title = serializers.CharField(min_length=1)
     duration = serializers.IntegerField(required=False, max_value=500)
     description = serializers.CharField(required=False)
@@ -115,7 +94,13 @@ class MovieUpdateSerializer(MovieValidateAbstractSerializer):
         raise ValidationError('Movie with this description already exists')
 
 
-class ReviewValidateAbstractSerializer(serializers.Serializer):
+class ReviewSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Review
+        fields = 'id movie_id text stars'.split()
+
+
+class ReviewValidateAbstractSerializer(ReviewSerializer, serializers.Serializer):
     text = serializers.CharField(min_length=1, max_length=1000)
     movie_id = serializers.IntegerField()
     stars = serializers.IntegerField()
@@ -133,11 +118,29 @@ class ReviewValidateAbstractSerializer(serializers.Serializer):
         return stars
 
 
+class ReviewCreateSerializer(ReviewValidateAbstractSerializer):
+    pass
+
+
 class ReviewUpdateSerializer(ReviewValidateAbstractSerializer):
 
-    def validate_id(self, id):
+    def validate_id(self):
         try:
             Review.objects.get(id=self.context.get('id'))
         except Review.DoesNotExist:
             raise ValidationError('No review with such id')
         return self.context.get('id')
+
+
+class MovieReviewsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Review
+        fields = 'id text stars'.split()
+
+
+class MovieWithReviewsSerializer(serializers.ModelSerializer):
+    reviews = MovieReviewsSerializer(many=True)
+
+    class Meta:
+        model = Movie
+        fields = 'id title reviews rating'.split()

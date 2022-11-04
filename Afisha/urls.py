@@ -14,16 +14,18 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, include
 from movie_app import views
+from . import swagger
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/v1/directors/', views.directors_view),
-    path('api/v1/movies/', views.movies_view),
-    path('api/v1/reviews/', views.reviews_view),
-    path('api/v1/directors/<int:id>/', views.director_detail_view),
-    path('api/v1/movies/<int:id>/', views.movie_detail_view),
-    path('api/v1/reviews/<int:id>/', views.review_detail_view),
-    path('api/v1/movies/reviews/', views.movies_with_reviews_view)
-]
+    path('api/v1/directors/', views.DirectorListCreateAPIView.as_view()),
+    path('api/v1/movies/', views.MovieListCreateAPIView.as_view()),
+    path('api/v1/reviews/', views.ReviewListCreateAPIView.as_view()),
+    path('api/v1/directors/<int:id>/', views.DirectorItemUpdateDeleteAPIView.as_view()),
+    path('api/v1/movies/<int:id>/', views.MovieItemUpdateDeleteAPIView.as_view()),
+    path('api/v1/reviews/<int:id>/', views.ReviewItemUpdateDeleteAPIView.as_view()),
+    path('api/v1/movies/reviews/', views.MovieWithReviewsListAPIView.as_view()),
+    path('api/v1/user/', include('user.urls'))
+] + swagger.urlpatterns
