@@ -8,7 +8,7 @@ class MovieAdmin(admin.ModelAdmin):
 
 
 class ReviewAdmin(admin.ModelAdmin):
-    list_display = 'movie stars'.split()
+    list_display = 'movie text stars'.split()
     list_editable = 'stars'.split()
 
 
